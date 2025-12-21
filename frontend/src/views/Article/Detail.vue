@@ -14,6 +14,13 @@
               </div>
               <div class="article-actions">
                 <el-button
+                  v-if="canEdit"
+                  type="primary"
+                  @click="handleEdit"
+                >
+                  编辑
+                </el-button>
+                <el-button
                   :type="article.is_liked ? 'primary' : 'default'"
                   @click="handleLike"
                 >
@@ -22,7 +29,11 @@
               </div>
             </div>
           </template>
-          <div class="article-content" v-html="article.content_html || article.content"></div>
+          <div class="article-content-wrapper">
+            <MarkdownViewer v-if="article.content && article.content.trim()" :content="article.content" />
+            <div v-else-if="article.content_html && article.content_html.trim()" class="article-content" v-html="article.content_html"></div>
+            <div v-else class="article-content-empty">暂无内容</div>
+          </div>
           <div v-if="article.categories && article.categories.length > 0" class="article-categories">
             <el-tag v-for="cat in article.categories" :key="cat.id" style="margin-right: 10px;">
               {{ cat.name }}
@@ -62,19 +73,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { getArticleDetail, toggleArticleLike } from '@/api/article'
 import { ElMessage } from 'element-plus'
 import type { Article, Comment } from '@/api/types'
 import CommentEditor from '@/components/Comment/CommentEditor.vue'
 import CommentList from '@/components/Comment/CommentList.vue'
+import MarkdownViewer from '@/components/MarkdownViewer.vue'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
 const article = ref<Article | null>(null)
 const articleId = ref(0)
 const replyToComment = ref<Comment | null>(null)
 const commentListRef = ref<InstanceType<typeof CommentList> | null>(null)
+
+const canEdit = computed(() => {
+  return userStore.isLoggedIn && article.value && article.value.author?.id === userStore.user?.id
+})
 
 onMounted(async () => {
   articleId.value = parseInt(route.params.id as string)
@@ -83,8 +102,19 @@ onMounted(async () => {
 
 async function loadArticle() {
   try {
-    article.value = await getArticleDetail(articleId.value)
+    const data = await getArticleDetail(articleId.value)
+    article.value = data
+    // 调试信息
+    console.log('Article loaded:', {
+      id: data.id,
+      title: data.title,
+      hasContent: !!data.content,
+      hasContentHtml: !!data.content_html,
+      contentLength: data.content?.length || 0,
+      contentHtmlLength: data.content_html?.length || 0
+    })
   } catch (error: any) {
+    console.error('Load article error:', error)
     ElMessage.error(error.message || '加载文章失败')
   }
 }
@@ -114,6 +144,10 @@ function handleCommentSuccess() {
     commentListRef.value.loadComments()
   }
   loadArticle() // 更新评论数
+}
+
+function handleEdit() {
+  router.push(`/article/${articleId.value}/edit`)
 }
 
 function formatDate(dateStr: string) {
@@ -147,9 +181,19 @@ function formatDate(dateStr: string) {
   margin-top: 10px;
 }
 
+.article-content-wrapper {
+  margin: 20px 0;
+  min-height: 100px;
+}
+
 .article-content {
   line-height: 1.8;
-  margin: 20px 0;
+}
+
+.article-content-empty {
+  padding: 40px;
+  text-align: center;
+  color: #999;
 }
 
 .article-categories,

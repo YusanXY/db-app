@@ -3,7 +3,17 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue({
+      // 确保正确转换编译宏
+      script: {
+        defineModel: false,
+        propsDestructure: false
+      },
+      // 确保所有 .vue 文件都被处理
+      include: [/\.vue$/]
+    })
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
@@ -21,21 +31,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
+    // 暂时禁用代码分割，确保 Vue 编译宏正确工作
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          // 将node_modules中的包分离
-          if (id.includes('node_modules')) {
-            if (id.includes('element-plus')) {
-              return 'element-plus'
-            }
-            if (id.includes('vue') || id.includes('vue-router') || id.includes('pinia')) {
-              return 'vue-vendor'
-            }
-            return 'vendor'
-          }
-        }
+        manualChunks: undefined
       }
     }
   }

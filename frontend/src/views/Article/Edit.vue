@@ -1,12 +1,15 @@
 <template>
-  <div class="article-create">
+  <div class="article-edit">
     <el-container>
       <el-main>
         <el-card>
           <template #header>
-            <h2>创建文章</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h2>编辑文章</h2>
+              <el-button @click="$router.back()">返回</el-button>
+            </div>
           </template>
-          <el-form :model="form" :rules="rules" ref="formRef">
+          <el-form :model="form" :rules="rules" ref="formRef" v-loading="loading">
             <el-form-item label="标题" prop="title">
               <el-input v-model="form.title" />
             </el-form-item>
@@ -23,8 +26,8 @@
               </el-radio-group>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSubmit" :loading="loading">发布</el-button>
-              <el-button @click="handleSaveDraft" :loading="loading">保存草稿</el-button>
+              <el-button type="primary" @click="handleSubmit" :loading="submitting">保存</el-button>
+              <el-button @click="handleSaveDraft" :loading="submitting">保存草稿</el-button>
               <el-button @click="$router.back()">取消</el-button>
             </el-form-item>
           </el-form>
@@ -35,19 +38,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { createArticle } from '@/api/article'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { getArticleDetail, updateArticle } from '@/api/article'
 import { ElMessage } from 'element-plus'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const route = useRoute()
+const userStore = useUserStore()
+
+const articleId = ref(0)
+const loading = ref(false)
+const submitting = ref(false)
+const formRef = ref()
 
 const form = ref({
   title: '',
   content: '',
   summary: '',
-  status: 'published' // 默认发布
+  status: 'draft'
 })
 
 const rules = {
@@ -55,26 +66,54 @@ const rules = {
   content: [{ required: true, message: '请输入内容', trigger: 'blur' }]
 }
 
-const formRef = ref()
-const loading = ref(false)
+onMounted(async () => {
+  articleId.value = parseInt(route.params.id as string)
+  await loadArticle()
+})
+
+async function loadArticle() {
+  loading.value = true
+  try {
+    const article = await getArticleDetail(articleId.value)
+    
+    // 检查权限
+    if (article.author?.id !== userStore.user?.id) {
+      ElMessage.error('您没有权限编辑此文章')
+      router.push(`/article/${articleId.value}`)
+      return
+    }
+
+    form.value = {
+      title: article.title,
+      content: article.content,
+      summary: article.summary || '',
+      status: article.status
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载文章失败')
+    router.push('/')
+  } finally {
+    loading.value = false
+  }
+}
 
 async function handleSubmit() {
   if (!formRef.value) return
   
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
-      loading.value = true
+      submitting.value = true
       try {
-        await createArticle({
+        await updateArticle(articleId.value, {
           ...form.value,
           status: 'published'
         })
         ElMessage.success('文章已发布')
-        router.push('/')
+        router.push(`/article/${articleId.value}`)
       } catch (error: any) {
-        ElMessage.error(error.message || '创建失败')
+        ElMessage.error(error.message || '更新失败')
       } finally {
-        loading.value = false
+        submitting.value = false
       }
     }
   })
@@ -85,18 +124,17 @@ async function handleSaveDraft() {
   
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
-      loading.value = true
+      submitting.value = true
       try {
-        await createArticle({
+        await updateArticle(articleId.value, {
           ...form.value,
           status: 'draft'
         })
         ElMessage.success('草稿已保存')
-        router.push('/')
       } catch (error: any) {
         ElMessage.error(error.message || '保存失败')
       } finally {
-        loading.value = false
+        submitting.value = false
       }
     }
   })
@@ -104,7 +142,7 @@ async function handleSaveDraft() {
 </script>
 
 <style scoped>
-.article-create {
+.article-edit {
   min-height: 100vh;
   padding: 20px;
 }

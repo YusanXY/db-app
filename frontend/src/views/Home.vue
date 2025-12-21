@@ -45,19 +45,24 @@
           <el-list v-else>
             <el-list-item v-for="article in articles" :key="article.id" style="border-bottom: 1px solid #eee; padding: 15px 0;">
               <template #default>
-                <div style="width: 100%;">
-                  <h4 style="margin: 0 0 10px 0;">
-                    <el-link :href="`/article/${article.id}`" type="primary" @click.prevent="$router.push(`/article/${article.id}`)">
-                      {{ article.title }}
-                    </el-link>
-                    <el-tag v-if="article.status === 'draft'" size="small" type="info" style="margin-left: 10px;">草稿</el-tag>
-                    <el-tag v-if="article.status === 'published'" size="small" type="success" style="margin-left: 10px;">已发布</el-tag>
-                  </h4>
-                  <p style="color: #666; margin: 5px 0;">{{ article.summary || '暂无摘要' }}</p>
-                  <div style="color: #999; font-size: 12px;">
-                    <span>作者：{{ article.author?.nickname || article.author?.username || '未知' }}</span>
-                    <span style="margin-left: 20px;">发布时间：{{ formatDate(article.created_at) }}</span>
-                    <span style="margin-left: 20px;">浏览：{{ article.view_count || 0 }}</span>
+                <div style="width: 100%; display: flex; gap: 15px;">
+                  <div v-if="article.cover_image_url" style="flex-shrink: 0; width: 200px; height: 120px; overflow: hidden; border-radius: 4px;">
+                    <img :src="article.cover_image_url" :alt="article.title" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" @click="$router.push(`/article/${article.id}`)" />
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <h4 style="margin: 0 0 10px 0;">
+                      <el-link :href="`/article/${article.id}`" type="primary" @click.prevent="$router.push(`/article/${article.id}`)">
+                        {{ article.title }}
+                      </el-link>
+                      <el-tag v-if="article.status === 'draft'" size="small" type="info" style="margin-left: 10px;">草稿</el-tag>
+                      <el-tag v-if="article.status === 'published'" size="small" type="success" style="margin-left: 10px;">已发布</el-tag>
+                    </h4>
+                    <p style="color: #666; margin: 5px 0;">{{ article.summary || '暂无摘要' }}</p>
+                    <div style="color: #999; font-size: 12px;">
+                      <span>作者：{{ article.author?.nickname || article.author?.username || '未知' }}</span>
+                      <span style="margin-left: 20px;">发布时间：{{ formatDate(article.created_at) }}</span>
+                      <span style="margin-left: 20px;">浏览：{{ article.view_count || 0 }}</span>
+                    </div>
                   </div>
                 </div>
               </template>

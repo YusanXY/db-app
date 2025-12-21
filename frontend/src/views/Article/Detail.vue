@@ -29,6 +29,9 @@
               </div>
             </div>
           </template>
+          <div v-if="article.cover_image_url" class="article-cover">
+            <img :src="article.cover_image_url" :alt="article.title" />
+          </div>
           <div class="article-content-wrapper">
             <MarkdownViewer v-if="article.content && article.content.trim()" :content="article.content" />
             <div v-else-if="article.content_html && article.content_html.trim()" class="article-content" v-html="article.content_html"></div>
@@ -179,6 +182,21 @@ function formatDate(dateStr: string) {
 
 .article-actions {
   margin-top: 10px;
+}
+
+.article-cover {
+  margin: 20px 0;
+  width: 100%;
+  max-height: 400px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.article-cover img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
 }
 
 .article-content-wrapper {

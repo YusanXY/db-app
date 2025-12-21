@@ -102,6 +102,7 @@ func main() {
 	tagHandler := handler.NewTagHandler(tagService)
 	commentHandler := handler.NewCommentHandler(commentService)
 	likeHandler := handler.NewLikeHandler(likeService)
+	fileHandler := handler.NewFileHandler(cfg)
 
 	// 初始化路由
 	router := gin.Default()
@@ -172,7 +173,20 @@ func main() {
 			comments.DELETE("/:id", middleware.AuthMiddleware(), commentHandler.DeleteComment)
 			comments.POST("/:id/like", middleware.AuthMiddleware(), likeHandler.ToggleCommentLike)
 		}
+
+		// 文件上传路由
+		files := api.Group("/files")
+		{
+			files.POST("/upload", middleware.AuthMiddleware(), fileHandler.UploadFile)
+		}
 	}
+
+	// 静态文件服务（用于访问上传的文件）
+	uploadPath := cfg.File.UploadPath
+	if uploadPath == "" {
+		uploadPath = "./uploads"
+	}
+	router.Static("/uploads", uploadPath)
 
 	// 启动服务
 	addr := ":" + cfg.Server.Port

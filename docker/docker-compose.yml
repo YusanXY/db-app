@@ -1,0 +1,99 @@
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: m.daocloud.io/docker.io/library/postgres:15-alpine
+    container_name: dbapp-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-dbapp}
+      POSTGRES_USER: ${DB_USER:-dbapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dbapp123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - dbapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dbapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis缓存
+  redis:
+    image: m.daocloud.io/docker.io/library/redis:7-alpine
+    container_name: dbapp-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis123} --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - dbapp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # 后端服务
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: dbapp-backend
+    environment:
+      - GIN_MODE=release
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-dbapp}
+      - DB_PASSWORD=${DB_PASSWORD:-dbapp123}
+      - DB_NAME=${DB_NAME:-dbapp}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - JWT_EXPIRES_IN=3600
+      - FILE_UPLOAD_PATH=/app/uploads
+    volumes:
+      - backend_uploads:/app/uploads
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - dbapp-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 前端服务
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: dbapp-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    networks:
+      - dbapp-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  dbapp-network:
+    driver: bridge
+

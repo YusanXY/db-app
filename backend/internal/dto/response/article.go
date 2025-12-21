@@ -30,16 +30,4 @@ type ArticleListResponse struct {
 	Pagination Pagination         `json:"pagination"`
 }
 
-type CategoryResponse struct {
-	ID          uint64 `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-}
-
-type TagResponse struct {
-	ID   uint64 `json:"id"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
-}
 

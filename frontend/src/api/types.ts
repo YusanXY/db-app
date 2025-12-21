@@ -36,12 +36,42 @@ export interface Category {
   name: string
   slug: string
   description: string
+  parent_id?: number
+  parent?: Category
+  icon_url?: string
+  sort_order?: number
+  article_count?: number
+  is_active?: boolean
+  children?: Category[]
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Tag {
   id: number
   name: string
   slug: string
+  description?: string
+  color?: string
+  article_count?: number
+  created_at?: string
+}
+
+export interface Comment {
+  id: number
+  article_id: number
+  content: string
+  content_html: string
+  user: User
+  parent_id?: number
+  parent?: Comment
+  like_count: number
+  reply_count: number
+  is_liked?: boolean
+  replies?: Comment[]
+  status: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Pagination {

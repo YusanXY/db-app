@@ -13,15 +13,18 @@ import (
 type ArticleService struct {
 	articleRepo *repository.ArticleRepository
 	userRepo    *repository.UserRepository
+	likeRepo    *repository.LikeRepository
 }
 
 func NewArticleService(
 	articleRepo *repository.ArticleRepository,
 	userRepo *repository.UserRepository,
+	likeRepo *repository.LikeRepository,
 ) *ArticleService {
 	return &ArticleService{
 		articleRepo: articleRepo,
 		userRepo:    userRepo,
+		likeRepo:    likeRepo,
 	}
 }
 
@@ -69,7 +72,15 @@ func (s *ArticleService) GetByID(id uint64, userID uint64) (*response.ArticleRes
 	// 增加浏览次数
 	go s.articleRepo.IncrementViewCount(id)
 
-	return s.toResponse(article, userID), nil
+	resp := s.toResponse(article, userID)
+	
+	// 检查当前用户是否点赞
+	if userID > 0 && s.likeRepo != nil {
+		isLiked, _ := s.likeRepo.IsLikedByUser(userID, "article", id)
+		resp.IsLiked = isLiked
+	}
+
+	return resp, nil
 }
 
 func (s *ArticleService) List(req *request.ListArticleRequest, userID uint64) (*response.ArticleListResponse, error) {
@@ -122,7 +133,13 @@ func (s *ArticleService) List(req *request.ListArticleRequest, userID uint64) (*
 
 	items := make([]*response.ArticleResponse, len(articles))
 	for i, article := range articles {
-		items[i] = s.toResponse(&article, userID)
+		resp := s.toResponse(&article, userID)
+		// 检查当前用户是否点赞
+		if userID > 0 && s.likeRepo != nil {
+			isLiked, _ := s.likeRepo.IsLikedByUser(userID, "article", article.ID)
+			resp.IsLiked = isLiked
+		}
+		items[i] = resp
 	}
 
 	totalPages := int((total + int64(req.PageSize) - 1) / int64(req.PageSize))

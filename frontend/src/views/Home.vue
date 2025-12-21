@@ -31,9 +31,10 @@
             </el-col>
             <el-col :span="8">
               <el-card shadow="hover">
-                <h3>社区功能</h3>
-                <p>评论、点赞、关注</p>
-                <el-button type="primary">了解更多</el-button>
+                <h3>分类标签</h3>
+                <p>管理分类和标签</p>
+                <el-button type="primary" @click="$router.push('/categories')">分类管理</el-button>
+                <el-button type="primary" @click="$router.push('/tags')" style="margin-left: 10px;">标签管理</el-button>
               </el-card>
             </el-col>
           </el-row>

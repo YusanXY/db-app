@@ -21,3 +21,7 @@ export function deleteArticle(id: number) {
   return request.delete(`/articles/${id}`)
 }
 
+export function toggleArticleLike(id: number) {
+  return request.post<{ is_liked: boolean }>(`/articles/${id}/like`)
+}
+

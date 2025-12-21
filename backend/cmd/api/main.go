@@ -82,14 +82,26 @@ func main() {
 		logger.Info("管理员用户已存在", zap.String("username", "root"))
 	}
 	articleRepo := repository.NewArticleRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
+	tagRepo := repository.NewTagRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	likeRepo := repository.NewLikeRepository(db)
 
 	// 初始化Service
 	userService := service.NewUserService(userRepo)
-	articleService := service.NewArticleService(articleRepo, userRepo)
+	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
+	tagService := service.NewTagService(tagRepo)
+	commentService := service.NewCommentService(commentRepo, articleRepo, likeRepo)
+	likeService := service.NewLikeService(likeRepo, articleRepo, commentRepo)
 
 	// 初始化Handler
 	authHandler := handler.NewAuthHandler(userService)
 	articleHandler := handler.NewArticleHandler(articleService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
+	tagHandler := handler.NewTagHandler(tagService)
+	commentHandler := handler.NewCommentHandler(commentService)
+	likeHandler := handler.NewLikeHandler(likeService)
 
 	// 初始化路由
 	router := gin.Default()
@@ -121,10 +133,44 @@ func main() {
 		articles := api.Group("/articles")
 		{
 			articles.GET("", articleHandler.GetArticleList)
+			// 评论路由（必须在/:id之前，避免路由冲突）
+			articles.GET("/:id/comments", commentHandler.GetCommentList)
+			articles.POST("/:id/comments", middleware.AuthMiddleware(), commentHandler.CreateComment)
+			articles.POST("/:id/like", middleware.AuthMiddleware(), likeHandler.ToggleArticleLike)
 			articles.GET("/:id", articleHandler.GetArticleDetail)
 			articles.POST("", middleware.AuthMiddleware(), articleHandler.CreateArticle)
 			articles.PUT("/:id", middleware.AuthMiddleware(), articleHandler.UpdateArticle)
 			articles.DELETE("/:id", middleware.AuthMiddleware(), articleHandler.DeleteArticle)
+		}
+
+		// 分类路由
+		categories := api.Group("/categories")
+		{
+			categories.GET("", categoryHandler.GetCategoryList)
+			categories.GET("/:id", categoryHandler.GetCategoryDetail)
+			categories.GET("/slug/:slug", categoryHandler.GetCategoryBySlug)
+			categories.POST("", middleware.AuthMiddleware(), categoryHandler.CreateCategory)
+			categories.PUT("/:id", middleware.AuthMiddleware(), categoryHandler.UpdateCategory)
+			categories.DELETE("/:id", middleware.AuthMiddleware(), categoryHandler.DeleteCategory)
+		}
+
+		// 标签路由
+		tags := api.Group("/tags")
+		{
+			tags.GET("", tagHandler.GetTagList)
+			tags.GET("/:id", tagHandler.GetTagDetail)
+			tags.GET("/slug/:slug", tagHandler.GetTagBySlug)
+			tags.POST("", middleware.AuthMiddleware(), tagHandler.CreateTag)
+			tags.PUT("/:id", middleware.AuthMiddleware(), tagHandler.UpdateTag)
+			tags.DELETE("/:id", middleware.AuthMiddleware(), tagHandler.DeleteTag)
+		}
+
+		// 评论路由
+		comments := api.Group("/comments")
+		{
+			comments.PUT("/:id", middleware.AuthMiddleware(), commentHandler.UpdateComment)
+			comments.DELETE("/:id", middleware.AuthMiddleware(), commentHandler.DeleteComment)
+			comments.POST("/:id/like", middleware.AuthMiddleware(), likeHandler.ToggleCommentLike)
 		}
 	}
 

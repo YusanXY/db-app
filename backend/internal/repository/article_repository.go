@@ -108,3 +108,13 @@ func (r *ArticleRepository) DecrementLikeCount(id uint64) error {
 		UpdateColumn("like_count", gorm.Expr("GREATEST(like_count - 1, 0)")).Error
 }
 
+func (r *ArticleRepository) IncrementCommentCount(id uint64) error {
+	return r.db.Model(&model.Article{}).Where("id = ?", id).
+		UpdateColumn("comment_count", gorm.Expr("comment_count + 1")).Error
+}
+
+func (r *ArticleRepository) DecrementCommentCount(id uint64) error {
+	return r.db.Model(&model.Article{}).Where("id = ?", id).
+		UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)")).Error
+}
+

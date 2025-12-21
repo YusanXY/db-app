@@ -29,6 +29,16 @@ const routes = [
     name: 'Register',
     component: () => import('@/views/Auth/Register.vue'),
     meta: { guestOnly: true }
+  },
+  {
+    path: '/categories',
+    name: 'CategoryList',
+    component: () => import('@/views/Category/List.vue')
+  },
+  {
+    path: '/tags',
+    name: 'TagList',
+    component: () => import('@/views/Tag/List.vue')
   }
 ]
 

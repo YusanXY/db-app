@@ -183,7 +183,7 @@
 
 ## 数据库表结构
 
-项目包含14张核心数据表：
+项目包含15张核心数据表：
 1. users - 用户表
 2. articles - 文章表
 3. article_versions - 文章版本表
@@ -194,10 +194,11 @@
 8. comments - 评论表
 9. likes - 点赞表
 10. files - 文件表
-11. user_follows - 用户关注表
-12. notifications - 通知表
-13. moderation_logs - 审核日志表
-14. search_history - 搜索历史表
+11. article_images - 文章图片表
+12. user_follows - 用户关注表
+13. notifications - 通知表
+14. moderation_logs - 审核日志表
+15. search_history - 搜索历史表
 
 详细设计请参考[数据库设计文档](./01-数据库设计.md)。
 

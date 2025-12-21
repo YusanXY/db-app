@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const editorId = ref(`vditor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
 const editorRef = ref<HTMLDivElement | null>(null)
 let vditor: Vditor | null = null
+let pasteHandler: ((e: ClipboardEvent) => void) | null = null
 
 onMounted(async () => {
   await nextTick()
@@ -35,6 +36,49 @@ onMounted(async () => {
     console.error('MarkdownEditor: Container element not found', { editorId: editorId.value, editorRef: editorRef.value })
     return
   }
+  
+  // 添加粘贴图片事件监听
+  pasteHandler = async (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items || !vditor) return
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.type.indexOf('image') !== -1) {
+        e.preventDefault()
+        e.stopPropagation()
+        const file = item.getAsFile()
+        if (file) {
+          // 上传图片
+          const formData = new FormData()
+          formData.append('file', file)
+          
+          try {
+            const token = localStorage.getItem('token')
+            const response = await fetch('/api/v1/files/upload', {
+              method: 'POST',
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+              body: formData
+            })
+            
+            const result = await response.json()
+            if (result.code === 200 && result.data) {
+              // 插入图片到编辑器
+              const imageUrl = result.data.url
+              const markdown = `![${file.name}](${imageUrl})`
+              vditor.insertValue(markdown)
+            }
+          } catch (error) {
+            console.error('Paste image upload error:', error)
+          }
+        }
+        break
+      }
+    }
+  }
+  
+  // 监听粘贴事件
+  container.addEventListener('paste', pasteHandler)
   
   try {
     const cacheId = editorId.value
@@ -87,7 +131,11 @@ onMounted(async () => {
         accept: 'image/*',
         url: '/api/v1/files/upload',
         fieldName: 'file',
-        headers: {},
+        headers: (() => {
+          // 获取token
+          const token = localStorage.getItem('token')
+          return token ? { Authorization: `Bearer ${token}` } : {}
+        })(),
         format: (files: File[], responseText: string) => {
           try {
             const res = JSON.parse(responseText)
@@ -102,6 +150,10 @@ onMounted(async () => {
         linkToImgUrl: (url: string) => {
           return url
         }
+      },
+      // 支持粘贴图片
+      paste: {
+        enable: true
       }
     })
     console.log('MarkdownEditor: Vditor initialized successfully', vditor)
@@ -111,6 +163,12 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  // 移除粘贴事件监听
+  if (editorRef.value && pasteHandler) {
+    editorRef.value.removeEventListener('paste', pasteHandler)
+    pasteHandler = null
+  }
+  
   if (vditor) {
     vditor.destroy()
     vditor = null

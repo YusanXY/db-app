@@ -72,7 +72,7 @@ const form = ref({
   title: '',
   content: '',
   summary: '',
-  cover_image_url: '',
+  cover_image_url: '/uploads/default/cover-default.jpg', // 默认封面图片
   status: 'published' // 默认发布
 })
 
@@ -127,7 +127,7 @@ function handleCoverError() {
 }
 
 function removeCover() {
-  form.value.cover_image_url = ''
+  form.value.cover_image_url = '/uploads/default/cover-default.jpg' // 恢复默认图片
 }
 
 async function handleSubmit() {
@@ -226,6 +226,11 @@ async function handleSaveDraft() {
   height: 100%;
   object-fit: cover;
   display: block;
+  background-color: #f5f5f5;
+}
+
+.cover-image[src=""] {
+  display: none;
 }
 
 .cover-uploader-icon {

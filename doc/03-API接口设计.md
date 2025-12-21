@@ -614,24 +614,35 @@ Authorization: Bearer {token}
 Content-Type: multipart/form-data
 ```
 
-**请求体**:
-- `file`: 文件 (必填)
-- `file_type`: 文件类型 (image/video/document/other)
+**请求参数**:
+- `file`: 文件 (必填，FormData格式)
+
+**文件限制**:
+- 支持的文件类型：jpg, jpeg, png, gif, webp（可在配置中修改）
+- 最大文件大小：10MB（可在配置中修改）
 
 **响应**:
 ```json
 {
   "code": 200,
   "data": {
-    "id": 1,
-    "filename": "original.jpg",
-    "file_url": "https://...",
-    "file_size": 102400,
-    "mime_type": "image/jpeg",
-    "file_type": "image"
+    "url": "/uploads/1734789123456_filename.jpg",
+    "name": "original.jpg",
+    "size": 102400
   }
 }
 ```
+
+**错误响应**:
+- `400`: 文件大小超限、文件类型不支持、未选择文件
+- `401`: 未认证
+- `500`: 服务器错误（创建目录失败、保存文件失败等）
+
+**说明**:
+- 文件保存在服务器本地文件系统（`./uploads`目录）
+- 文件名格式：`{timestamp}_{原始文件名}`
+- 返回的URL为相对路径，前端通过Nginx代理访问
+- 上传的文件会自动通过静态文件服务提供访问（`/uploads/*`）
 
 ### 8.2 获取文件列表
 **GET** `/api/v1/files`

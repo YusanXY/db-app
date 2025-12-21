@@ -46,6 +46,7 @@ func main() {
 			&model.Tag{},
 			&model.Comment{},
 			&model.Like{},
+			&model.ArticleImage{},
 		); err != nil {
 			logger.Fatal("数据库迁移失败", zap.String("error", err.Error()))
 		} else {
@@ -86,10 +87,11 @@ func main() {
 	tagRepo := repository.NewTagRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
 
 	// 初始化Service
 	userService := service.NewUserService(userRepo)
-	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo)
+	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	tagService := service.NewTagService(tagRepo)
 	commentService := service.NewCommentService(commentRepo, articleRepo, likeRepo)

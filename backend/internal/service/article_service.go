@@ -7,24 +7,29 @@ import (
 	"dbapp/internal/model"
 	"dbapp/internal/repository"
 	"github.com/gosimple/slug"
+	"regexp"
+	"strings"
 	"time"
 )
 
 type ArticleService struct {
-	articleRepo *repository.ArticleRepository
-	userRepo    *repository.UserRepository
-	likeRepo    *repository.LikeRepository
+	articleRepo     *repository.ArticleRepository
+	userRepo        *repository.UserRepository
+	likeRepo        *repository.LikeRepository
+	articleImageRepo *repository.ArticleImageRepository
 }
 
 func NewArticleService(
 	articleRepo *repository.ArticleRepository,
 	userRepo *repository.UserRepository,
 	likeRepo *repository.LikeRepository,
+	articleImageRepo *repository.ArticleImageRepository,
 ) *ArticleService {
 	return &ArticleService{
-		articleRepo: articleRepo,
-		userRepo:    userRepo,
-		likeRepo:    likeRepo,
+		articleRepo:      articleRepo,
+		userRepo:         userRepo,
+		likeRepo:         likeRepo,
+		articleImageRepo: articleImageRepo,
 	}
 }
 
@@ -57,6 +62,9 @@ func (s *ArticleService) Create(req *request.CreateArticleRequest, userID uint64
 	if err := s.articleRepo.Create(article); err != nil {
 		return nil, errors.NewInternalError("创建文章失败")
 	}
+
+	// 提取文章内容中的图片并保存到数据库
+	s.extractAndSaveImages(article.ID, article.Content)
 
 	// 加载关联数据
 	article, _ = s.articleRepo.GetByID(article.ID)
@@ -173,6 +181,8 @@ func (s *ArticleService) Update(id uint64, req *request.UpdateArticleRequest, us
 	}
 	if req.Content != "" {
 		article.Content = req.Content
+		// 更新文章内容时，重新提取图片
+		s.extractAndSaveImages(article.ID, article.Content)
 	}
 	if req.Summary != "" {
 		article.Summary = req.Summary
@@ -274,6 +284,66 @@ func (s *ArticleService) toResponse(article *model.Article, userID uint64) *resp
 		PublishedAt:   article.PublishedAt,
 		CreatedAt:     article.CreatedAt,
 		UpdatedAt:     article.UpdatedAt,
+	}
+}
+
+// extractAndSaveImages 从Markdown内容中提取图片URL并保存到数据库
+func (s *ArticleService) extractAndSaveImages(articleID uint64, content string) {
+	if s.articleImageRepo == nil || content == "" {
+		return
+	}
+
+	// 匹配Markdown图片语法: ![alt](url) 或 <img src="url" alt="alt" />
+	// 也匹配HTML img标签
+	imgRegex := regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)|<img[^>]+src=["']([^"']+)["'][^>]*>`)
+	matches := imgRegex.FindAllStringSubmatch(content, -1)
+
+	// 收集所有图片URL
+	imageURLs := make(map[string]bool)
+	for _, match := range matches {
+		var url string
+		if len(match) > 2 && match[2] != "" {
+			// Markdown格式: ![alt](url)
+			url = strings.TrimSpace(match[2])
+		} else if len(match) > 3 && match[3] != "" {
+			// HTML格式: <img src="url" />
+			url = strings.TrimSpace(match[3])
+		}
+		
+		if url != "" && !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+			// 只处理相对路径的图片（上传到服务器的图片）
+			imageURLs[url] = true
+		}
+	}
+
+	// 获取现有的图片记录
+	existingImages, _ := s.articleImageRepo.GetByArticleID(articleID)
+	existingURLs := make(map[string]bool)
+	for _, img := range existingImages {
+		existingURLs[img.ImageURL] = true
+	}
+
+	// 添加新图片
+	for url := range imageURLs {
+		if !existingURLs[url] {
+			// 检查是否已存在（可能其他文章也在使用）
+			existing, _ := s.articleImageRepo.GetByURL(url)
+			if existing == nil {
+				// 创建新记录
+				articleImage := &model.ArticleImage{
+					ArticleID: articleID,
+					ImageURL:  url,
+				}
+				s.articleImageRepo.Create(articleImage)
+			}
+		}
+	}
+
+	// 删除不再使用的图片记录（软删除）
+	for _, img := range existingImages {
+		if !imageURLs[img.ImageURL] {
+			s.articleImageRepo.DeleteByID(img.ID)
+		}
 	}
 }
 

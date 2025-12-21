@@ -197,6 +197,11 @@ function formatDate(dateStr: string) {
   height: auto;
   object-fit: cover;
   display: block;
+  background-color: #f5f5f5;
+}
+
+.article-cover img[src=""] {
+  display: none;
 }
 
 .article-content-wrapper {

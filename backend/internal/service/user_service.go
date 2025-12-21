@@ -23,14 +23,14 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 
 func (s *UserService) Register(req *request.RegisterRequest) (*response.UserResponse, error) {
 	// 检查用户名是否已存在
-	existingUser, _ := s.userRepo.GetByUsername(req.Username)
-	if existingUser != nil {
+	existingUser, err := s.userRepo.GetByUsername(req.Username)
+	if err == nil && existingUser != nil {
 		return nil, errors.NewBadRequestError("用户名已存在")
 	}
 
 	// 检查邮箱是否已存在
-	existingUser, _ = s.userRepo.GetByEmail(req.Email)
-	if existingUser != nil {
+	existingUser, err = s.userRepo.GetByEmail(req.Email)
+	if err == nil && existingUser != nil {
 		return nil, errors.NewBadRequestError("邮箱已存在")
 	}
 

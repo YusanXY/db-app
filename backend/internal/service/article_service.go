@@ -84,7 +84,13 @@ func (s *ArticleService) List(req *request.ListArticleRequest, userID uint64) (*
 	if req.Status != "" {
 		conditions["status"] = req.Status
 	} else {
-		conditions["status"] = "published" // 默认只显示已发布的
+		// 如果用户已登录，显示所有状态的文章；否则只显示已发布的
+		if userID > 0 {
+			// 已登录用户可以看到所有文章（包括自己的草稿）
+			// 不设置status条件，显示所有状态
+		} else {
+			conditions["status"] = "published" // 未登录用户只显示已发布的
+		}
 	}
 	if req.CategoryID > 0 {
 		conditions["category_id"] = req.CategoryID
@@ -166,7 +172,8 @@ func (s *ArticleService) Update(id uint64, req *request.UpdateArticleRequest, us
 	}
 
 	article.EditCount++
-	article.EditorID = userID
+	editorID := userID
+	article.EditorID = &editorID
 
 	if err := s.articleRepo.Update(article); err != nil {
 		return nil, errors.NewInternalError("更新文章失败")

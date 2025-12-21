@@ -42,12 +42,18 @@ const form = ref({
 })
 
 const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 50, message: '用户名长度应在3-50个字符之间', trigger: 'blur' }
+  ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 8, max: 50, message: '密码长度应在8-50个字符之间', trigger: 'blur' }
+  ]
 }
 
 const formRef = ref()

@@ -39,7 +39,7 @@ const form = ref({
   title: '',
   content: '',
   summary: '',
-  status: 'draft'
+  status: 'published' // 默认发布，而不是草稿
 })
 
 const rules = {

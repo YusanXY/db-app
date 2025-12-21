@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"dbapp/internal/config"
 	"dbapp/internal/handler"
 	"dbapp/internal/middleware"
@@ -11,6 +12,7 @@ import (
 	"dbapp/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -32,8 +34,11 @@ func main() {
 		logger.Fatal("初始化数据库失败", zap.String("error", err.Error()))
 	}
 
-	// 自动迁移（开发环境）
-	if cfg.App.Env == "development" || cfg.App.Debug {
+	// 自动迁移数据库表结构
+	// 可以通过环境变量 AUTO_MIGRATE=false 来禁用自动迁移
+	autoMigrate := os.Getenv("AUTO_MIGRATE")
+	if autoMigrate != "false" {
+		logger.Info("开始执行数据库迁移...")
 		if err := db.AutoMigrate(
 			&model.User{},
 			&model.Article{},
@@ -42,12 +47,40 @@ func main() {
 			&model.Comment{},
 			&model.Like{},
 		); err != nil {
-			logger.Error("数据库迁移失败", zap.String("error", err.Error()))
+			logger.Fatal("数据库迁移失败", zap.String("error", err.Error()))
+		} else {
+			logger.Info("数据库迁移成功")
 		}
 	}
 
 	// 初始化Repository
 	userRepo := repository.NewUserRepository(db)
+
+	// 创建默认管理员用户
+	_, err = userRepo.GetByUsername("root")
+	if err != nil {
+		// 管理员用户不存在，创建它
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("qweasdzxc"), bcrypt.DefaultCost)
+		if err != nil {
+			logger.Error("创建管理员用户失败：密码加密失败", zap.String("error", err.Error()))
+		} else {
+			adminUser := &model.User{
+				Username:     "root",
+				Email:        "admin@dbapp.local",
+				PasswordHash: string(hashedPassword),
+				Nickname:     "管理员",
+				Role:         "admin",
+				Status:       "active",
+			}
+			if err := userRepo.Create(adminUser); err != nil {
+				logger.Error("创建管理员用户失败", zap.String("error", err.Error()))
+			} else {
+				logger.Info("管理员用户创建成功", zap.String("username", "root"))
+			}
+		}
+	} else {
+		logger.Info("管理员用户已存在", zap.String("username", "root"))
+	}
 	articleRepo := repository.NewArticleRepository(db)
 
 	// 初始化Service

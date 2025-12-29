@@ -13,7 +13,9 @@ func TestArticleService_Create(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试用户
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
@@ -45,7 +47,9 @@ func TestArticleService_GetByID(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
@@ -68,7 +72,9 @@ func TestArticleService_GetByID_NotFound(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 查询不存在的文章
 	_, err := articleService.GetByID(99999, 1)
@@ -83,7 +89,9 @@ func TestArticleService_List(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
@@ -116,7 +124,9 @@ func TestArticleService_ListWithPagination(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
@@ -153,7 +163,9 @@ func TestArticleService_Update(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
@@ -164,7 +176,7 @@ func TestArticleService_Update(t *testing.T) {
 		Content: "更新后的内容",
 	}
 
-	updated, err := articleService.Update(article.ID, &req, user.ID)
+	updated, err := articleService.Update(article.ID, req, user.ID)
 	if err != nil {
 		t.Fatalf("更新文章失败: %v", err)
 	}
@@ -180,7 +192,9 @@ func TestArticleService_Update_Unauthorized(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	author := test.CreateTestUser(db, "author", "author@example.com")
@@ -191,7 +205,7 @@ func TestArticleService_Update_Unauthorized(t *testing.T) {
 		Title: "尝试修改",
 	}
 
-	_, err := articleService.Update(article.ID, &req, otherUser.ID)
+	_, err := articleService.Update(article.ID, req, otherUser.ID)
 	if err == nil {
 		t.Error("应该返回无权限的错误")
 	}
@@ -203,7 +217,9 @@ func TestArticleService_Delete(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
@@ -227,7 +243,9 @@ func TestArticleService_Delete_Unauthorized(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 
 	// 创建测试数据
 	author := test.CreateTestUser(db, "author", "author@example.com")

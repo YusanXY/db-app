@@ -37,15 +37,25 @@
             <div v-else-if="article.content_html && article.content_html.trim()" class="article-content" v-html="article.content_html"></div>
             <div v-else class="article-content-empty">暂无内容</div>
           </div>
-          <div v-if="article.categories && article.categories.length > 0" class="article-categories">
-            <el-tag v-for="cat in article.categories" :key="cat.id" style="margin-right: 10px;">
-              {{ cat.name }}
-            </el-tag>
-          </div>
-          <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-            <el-tag v-for="tag in article.tags" :key="tag.id" type="info" style="margin-right: 10px;">
-              {{ tag.name }}
-            </el-tag>
+          <div class="article-taxonomy" v-if="(article.categories && article.categories.length > 0) || (article.tags && article.tags.length > 0)">
+            <div v-if="article.categories && article.categories.length > 0" class="taxonomy-section">
+              <span class="taxonomy-label">分类：</span>
+              <el-tag v-for="cat in article.categories" :key="cat.id" style="margin-right: 8px;">
+                {{ cat.name }}
+              </el-tag>
+            </div>
+            <div v-if="article.tags && article.tags.length > 0" class="taxonomy-section">
+              <span class="taxonomy-label">标签：</span>
+              <el-tag 
+                v-for="tag in article.tags" 
+                :key="tag.id" 
+                :style="tag.color ? { backgroundColor: tag.color, borderColor: tag.color, color: '#fff' } : {}"
+                :type="tag.color ? undefined : 'info'"
+                style="margin-right: 8px;"
+              >
+                {{ tag.name }}
+              </el-tag>
+            </div>
           </div>
         </el-card>
 
@@ -219,11 +229,23 @@ function formatDate(dateStr: string) {
   color: #999;
 }
 
-.article-categories,
-.article-tags {
+.article-taxonomy {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+}
+
+.taxonomy-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.taxonomy-label {
+  color: #666;
+  margin-right: 10px;
+  font-size: 14px;
 }
 </style>
 

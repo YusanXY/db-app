@@ -118,3 +118,49 @@ func (r *ArticleRepository) DecrementCommentCount(id uint64) error {
 		UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - 1, 0)")).Error
 }
 
+// UpdateCategories 更新文章的分类关联
+func (r *ArticleRepository) UpdateCategories(articleID uint64, categoryIDs []uint64) error {
+	article := &model.Article{ID: articleID}
+	
+	// 先清除现有的分类关联
+	if err := r.db.Model(article).Association("Categories").Clear(); err != nil {
+		return err
+	}
+	
+	// 如果有新的分类ID，添加关联
+	if len(categoryIDs) > 0 {
+		var categories []model.Category
+		if err := r.db.Where("id IN ?", categoryIDs).Find(&categories).Error; err != nil {
+			return err
+		}
+		if err := r.db.Model(article).Association("Categories").Replace(categories); err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+
+// UpdateTags 更新文章的标签关联
+func (r *ArticleRepository) UpdateTags(articleID uint64, tagIDs []uint64) error {
+	article := &model.Article{ID: articleID}
+	
+	// 先清除现有的标签关联
+	if err := r.db.Model(article).Association("Tags").Clear(); err != nil {
+		return err
+	}
+	
+	// 如果有新的标签ID，添加关联
+	if len(tagIDs) > 0 {
+		var tags []model.Tag
+		if err := r.db.Where("id IN ?", tagIDs).Find(&tags).Error; err != nil {
+			return err
+		}
+		if err := r.db.Model(article).Association("Tags").Replace(tags); err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+

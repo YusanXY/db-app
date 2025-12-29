@@ -84,6 +84,8 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("redis.password", "REDIS_PASSWORD")
 	viper.BindEnv("jwt.secret", "JWT_SECRET")
 	viper.BindEnv("jwt.expires_in", "JWT_EXPIRES_IN")
+	viper.BindEnv("file.upload_path", "FILE_UPLOAD_PATH")
+	viper.BindEnv("file.max_size", "FILE_MAX_SIZE")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -105,6 +107,16 @@ func LoadConfig() (*Config, error) {
 	}
 	if config.JWT.Secret == "" {
 		config.JWT.Secret = "default-secret-key-change-in-production"
+	}
+	// 文件上传默认值
+	if config.File.UploadPath == "" {
+		config.File.UploadPath = "./uploads"
+	}
+	if config.File.MaxSize == 0 {
+		config.File.MaxSize = 10 * 1024 * 1024 // 默认10MB
+	}
+	if len(config.File.AllowedExt) == 0 {
+		config.File.AllowedExt = []string{"jpg", "jpeg", "png", "gif", "webp", "svg", "pdf"}
 	}
 
 	GlobalConfig = &config

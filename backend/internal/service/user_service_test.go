@@ -30,9 +30,8 @@ func TestUserService_Register(t *testing.T) {
 		t.Errorf("期望用户名 newuser, 得到 %s", user.Username)
 	}
 
-	if user.Email != "newuser@example.com" {
-		t.Errorf("期望邮箱 newuser@example.com, 得到 %s", user.Email)
-	}
+	// UserResponse 不包含 Email 字段（出于隐私考虑）
+	// 只验证用户名即可
 }
 
 func TestUserService_Register_DuplicateUsername(t *testing.T) {

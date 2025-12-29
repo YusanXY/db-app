@@ -20,6 +20,7 @@
                   :on-success="handleCoverSuccess"
                   :on-error="handleCoverError"
                   :before-upload="beforeCoverUpload"
+                  name="file"
                   accept="image/*"
                 >
                   <img v-if="form.cover_image_url" :src="form.cover_image_url" class="cover-image" />
@@ -35,6 +36,31 @@
             </el-form-item>
             <el-form-item label="摘要" prop="summary">
               <el-input v-model="form.summary" type="textarea" :rows="3" placeholder="文章摘要，将显示在文章列表中" />
+            </el-form-item>
+            <el-form-item label="分类">
+              <el-select v-model="form.category_ids" multiple placeholder="选择分类" style="width: 100%">
+                <el-option
+                  v-for="cat in flatCategories"
+                  :key="cat.id"
+                  :label="cat.displayName"
+                  :value="cat.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="标签">
+              <el-select v-model="form.tag_ids" multiple filterable placeholder="选择标签" style="width: 100%">
+                <el-option
+                  v-for="tag in tags"
+                  :key="tag.id"
+                  :label="tag.name"
+                  :value="tag.id"
+                >
+                  <span>{{ tag.name }}</span>
+                  <el-tag v-if="tag.color" :style="{ backgroundColor: tag.color, marginLeft: '10px' }" size="small">
+                    &nbsp;
+                  </el-tag>
+                </el-option>
+              </el-select>
             </el-form-item>
             <el-form-item label="状态">
               <el-radio-group v-model="form.status">
@@ -55,25 +81,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createArticle } from '@/api/article'
+import { getCategoryList } from '@/api/category'
+import { getTagList } from '@/api/tag'
 import { uploadFile } from '@/api/file'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import MarkdownEditor from '@/components/MarkdownEditor.vue'
 import { useUserStore } from '@/stores/user'
 import request from '@/api/request'
+import type { Category, Tag } from '@/api/types'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+const categories = ref<Category[]>([])
+const tags = ref<Tag[]>([])
 
 const form = ref({
   title: '',
   content: '',
   summary: '',
   cover_image_url: '/uploads/default/cover-default.jpg', // 默认封面图片
-  status: 'published' // 默认发布
+  status: 'published', // 默认发布
+  category_ids: [] as number[],
+  tag_ids: [] as number[]
+})
+
+// 扁平化分类列表用于选择
+const flatCategories = computed(() => {
+  const flatten = (cats: Category[], prefix: string = ''): { id: number; displayName: string }[] => {
+    const result: { id: number; displayName: string }[] = []
+    cats.forEach(cat => {
+      result.push({ id: cat.id, displayName: prefix + cat.name })
+      if (cat.children && cat.children.length > 0) {
+        result.push(...flatten(cat.children, prefix + cat.name + ' / '))
+      }
+    })
+    return result
+  }
+  return flatten(categories.value)
+})
+
+async function loadCategories() {
+  try {
+    categories.value = await getCategoryList({ tree: true })
+  } catch (error) {
+    console.error('加载分类失败:', error)
+  }
+}
+
+async function loadTags() {
+  try {
+    tags.value = await getTagList()
+  } catch (error) {
+    console.error('加载标签失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadCategories()
+  loadTags()
 })
 
 const uploadAction = computed(() => {
@@ -113,17 +183,35 @@ function beforeCoverUpload(file: File) {
 
 async function handleCoverSuccess(response: any) {
   uploading.value = false
-  if (response.code === 200 && response.data) {
+  console.log('封面上传响应:', response)
+  // 处理不同的响应格式
+  if (response && response.code === 200 && response.data) {
+    form.value.cover_image_url = response.data.url
+    ElMessage.success('封面图片上传成功')
+  } else if (response && response.data && response.data.url) {
+    // 直接返回 data 的情况
     form.value.cover_image_url = response.data.url
     ElMessage.success('封面图片上传成功')
   } else {
-    ElMessage.error(response.message || '上传失败')
+    console.error('上传响应格式异常:', response)
+    ElMessage.error(response?.message || '上传失败，请检查网络或重新登录')
   }
 }
 
-function handleCoverError() {
+function handleCoverError(error: any, uploadFile: any, uploadFiles: any) {
   uploading.value = false
-  ElMessage.error('封面图片上传失败')
+  console.error('封面图片上传失败:', error)
+  // 尝试解析错误信息
+  let errorMsg = '封面图片上传失败'
+  if (error?.message) {
+    try {
+      const parsed = JSON.parse(error.message)
+      errorMsg = parsed.message || errorMsg
+    } catch {
+      errorMsg = error.message || errorMsg
+    }
+  }
+  ElMessage.error(errorMsg)
 }
 
 function removeCover() {

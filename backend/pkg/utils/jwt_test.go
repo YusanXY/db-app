@@ -2,7 +2,6 @@ package utils
 
 import (
 	"dbapp/internal/config"
-	"os"
 	"testing"
 )
 

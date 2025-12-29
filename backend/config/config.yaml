@@ -32,6 +32,8 @@ file:
     - jpeg
     - png
     - gif
+    - webp
+    - svg
     - pdf
 
 app:

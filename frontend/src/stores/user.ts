@@ -32,6 +32,7 @@ export const useUserStore = defineStore('user', () => {
   return {
     token,
     userInfo,
+    user: userInfo, // 别名，方便使用
     isLoggedIn,
     isAdmin,
     loginAction,

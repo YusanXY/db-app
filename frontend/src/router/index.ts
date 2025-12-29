@@ -8,6 +8,11 @@ const routes = [
     component: () => import('@/views/Home.vue')
   },
   {
+    path: '/search',
+    name: 'Search',
+    component: () => import('@/views/Search.vue')
+  },
+  {
     path: '/article/:id',
     name: 'ArticleDetail',
     component: () => import('@/views/Article/Detail.vue')

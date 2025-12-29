@@ -1,0 +1,21 @@
+# 爬虫脚本（含敏感数据库配置）
+scripts/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# 上传的文件
+docker/backend/uploads/
+!docker/backend/uploads/default/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 临时文件
+temp/
+*.tmp
+*.log

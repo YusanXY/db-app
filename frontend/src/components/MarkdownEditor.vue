@@ -136,16 +136,43 @@ onMounted(async () => {
           const token = localStorage.getItem('token')
           return token ? { Authorization: `Bearer ${token}` } : {}
         })(),
+        // 自定义上传格式转换，返回 Vditor 期望的格式
         format: (files: File[], responseText: string) => {
           try {
             const res = JSON.parse(responseText)
             if (res.code === 200 && res.data) {
-              return JSON.stringify([res.data.url])
+              // Vditor 期望的格式
+              const succMap: Record<string, string> = {}
+              succMap[res.data.name || 'image'] = res.data.url
+              return JSON.stringify({
+                msg: '',
+                code: 0,
+                data: {
+                  errFiles: [],
+                  succMap: succMap
+                }
+              })
+            } else {
+              return JSON.stringify({
+                msg: res.message || '上传失败',
+                code: -1,
+                data: {
+                  errFiles: files.map(f => f.name),
+                  succMap: {}
+                }
+              })
             }
           } catch (e) {
             console.error('Upload response parse error:', e)
+            return JSON.stringify({
+              msg: '上传响应解析失败',
+              code: -1,
+              data: {
+                errFiles: files.map(f => f.name),
+                succMap: {}
+              }
+            })
           }
-          return '[]'
         },
         linkToImgUrl: (url: string) => {
           return url

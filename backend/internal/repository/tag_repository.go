@@ -22,7 +22,14 @@ func (r *TagRepository) Create(tag *model.Tag) error {
 func (r *TagRepository) GetByID(id uint64) (*model.Tag, error) {
 	var tag model.Tag
 	err := r.db.First(&tag, id).Error
-	return &tag, err
+	if err != nil {
+		return &tag, err
+	}
+	// 动态计算文章数
+	var count int64
+	r.db.Table("article_tags").Where("tag_id = ?", tag.ID).Count(&count)
+	tag.ArticleCount = int(count)
+	return &tag, nil
 }
 
 func (r *TagRepository) GetBySlug(slug string) (*model.Tag, error) {
@@ -51,9 +58,9 @@ func (r *TagRepository) List(keyword string, sort string, order string, limit in
 		query = query.Where("name ILIKE ? OR description ILIKE ?", "%"+keyword+"%", "%"+keyword+"%")
 	}
 
-	// 排序
-	if sort == "" {
-		sort = "article_count"
+	// 排序 (除 article_count 外)
+	if sort == "" || sort == "article_count" {
+		sort = "created_at"
 	}
 	if order == "" {
 		order = "DESC"
@@ -65,7 +72,18 @@ func (r *TagRepository) List(keyword string, sort string, order string, limit in
 	}
 
 	err := query.Find(&tags).Error
-	return tags, err
+	if err != nil {
+		return tags, err
+	}
+
+	// 动态计算每个标签的文章数
+	for i := range tags {
+		var count int64
+		r.db.Table("article_tags").Where("tag_id = ?", tags[i].ID).Count(&count)
+		tags[i].ArticleCount = int(count)
+	}
+
+	return tags, nil
 }
 
 func (r *TagRepository) Update(tag *model.Tag) error {

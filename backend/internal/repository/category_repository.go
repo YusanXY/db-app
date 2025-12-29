@@ -22,7 +22,14 @@ func (r *CategoryRepository) Create(category *model.Category) error {
 func (r *CategoryRepository) GetByID(id uint64) (*model.Category, error) {
 	var category model.Category
 	err := r.db.Preload("Parent").Preload("Children").First(&category, id).Error
-	return &category, err
+	if err != nil {
+		return &category, err
+	}
+	// 动态计算文章数
+	var count int64
+	r.db.Table("article_categories").Where("category_id = ?", category.ID).Count(&count)
+	category.ArticleCount = int(count)
+	return &category, nil
 }
 
 func (r *CategoryRepository) GetBySlug(slug string) (*model.Category, error) {
@@ -54,7 +61,18 @@ func (r *CategoryRepository) List(parentID *uint64, isActive *bool) ([]model.Cat
 		Order("sort_order ASC, created_at ASC").
 		Find(&categories).Error
 
-	return categories, err
+	if err != nil {
+		return categories, err
+	}
+
+	// 动态计算每个分类的文章数
+	for i := range categories {
+		var count int64
+		r.db.Table("article_categories").Where("category_id = ?", categories[i].ID).Count(&count)
+		categories[i].ArticleCount = int(count)
+	}
+
+	return categories, nil
 }
 
 func (r *CategoryRepository) GetTree() ([]model.Category, error) {
@@ -64,7 +82,24 @@ func (r *CategoryRepository) GetTree() ([]model.Category, error) {
 		Order("sort_order ASC, created_at ASC").
 		Find(&categories).Error
 
-	return categories, err
+	if err != nil {
+		return categories, err
+	}
+
+	// 动态计算每个分类及其子分类的文章数
+	for i := range categories {
+		var count int64
+		r.db.Table("article_categories").Where("category_id = ?", categories[i].ID).Count(&count)
+		categories[i].ArticleCount = int(count)
+		
+		for j := range categories[i].Children {
+			var childCount int64
+			r.db.Table("article_categories").Where("category_id = ?", categories[i].Children[j].ID).Count(&childCount)
+			categories[i].Children[j].ArticleCount = int(childCount)
+		}
+	}
+
+	return categories, nil
 }
 
 func (r *CategoryRepository) Update(category *model.Category) error {

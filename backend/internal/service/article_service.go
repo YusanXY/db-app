@@ -63,6 +63,20 @@ func (s *ArticleService) Create(req *request.CreateArticleRequest, userID uint64
 		return nil, errors.NewInternalError("创建文章失败")
 	}
 
+	// 更新分类关联
+	if len(req.CategoryIDs) > 0 {
+		if err := s.articleRepo.UpdateCategories(article.ID, req.CategoryIDs); err != nil {
+			// 记录错误但不影响文章创建
+		}
+	}
+
+	// 更新标签关联
+	if len(req.TagIDs) > 0 {
+		if err := s.articleRepo.UpdateTags(article.ID, req.TagIDs); err != nil {
+			// 记录错误但不影响文章创建
+		}
+	}
+
 	// 提取文章内容中的图片并保存到数据库
 	s.extractAndSaveImages(article.ID, article.Content)
 
@@ -204,6 +218,20 @@ func (s *ArticleService) Update(id uint64, req *request.UpdateArticleRequest, us
 
 	if err := s.articleRepo.Update(article); err != nil {
 		return nil, errors.NewInternalError("更新文章失败")
+	}
+
+	// 更新分类关联（即使是空数组也要更新，表示清除所有分类）
+	if req.CategoryIDs != nil {
+		if err := s.articleRepo.UpdateCategories(article.ID, req.CategoryIDs); err != nil {
+			// 记录错误但不影响文章更新
+		}
+	}
+
+	// 更新标签关联（即使是空数组也要更新，表示清除所有标签）
+	if req.TagIDs != nil {
+		if err := s.articleRepo.UpdateTags(article.ID, req.TagIDs); err != nil {
+			// 记录错误但不影响文章更新
+		}
 	}
 
 	article, _ = s.articleRepo.GetByID(id)

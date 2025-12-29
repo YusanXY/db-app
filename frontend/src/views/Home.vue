@@ -3,7 +3,21 @@
     <el-container>
       <el-header>
         <h1>百科Web应用</h1>
-        <div style="float: right;">
+        <div class="header-search">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索文章..."
+            clearable
+            @keyup.enter="handleSearchSubmit"
+            style="width: 300px;"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-button type="primary" @click="handleSearchSubmit" style="margin-left: 10px;">搜索</el-button>
+        </div>
+        <div class="header-actions">
           <el-button v-if="!userStore.isLoggedIn" @click="$router.push('/login')">登录</el-button>
           <el-button v-if="!userStore.isLoggedIn" @click="$router.push('/register')">注册</el-button>
           <el-button v-if="userStore.isLoggedIn" @click="handleLogout">退出</el-button>
@@ -26,7 +40,7 @@
               <el-card shadow="hover">
                 <h3>浏览文章</h3>
                 <p>查看和搜索百科内容</p>
-                <el-button type="primary" @click="loadArticles">刷新列表</el-button>
+                <el-button type="primary" @click="$router.push('/search')">搜索文章</el-button>
               </el-card>
             </el-col>
             <el-col :span="8">
@@ -58,6 +72,24 @@
                       <el-tag v-if="article.status === 'published'" size="small" type="success" style="margin-left: 10px;">已发布</el-tag>
                     </h4>
                     <p style="color: #666; margin: 5px 0;">{{ article.summary || '暂无摘要' }}</p>
+                    <div v-if="(article.categories && article.categories.length > 0) || (article.tags && article.tags.length > 0)" style="margin: 8px 0;">
+                      <template v-if="article.categories && article.categories.length > 0">
+                        <el-tag v-for="cat in article.categories" :key="'cat-' + cat.id" size="small" style="margin-right: 5px;">
+                          {{ cat.name }}
+                        </el-tag>
+                      </template>
+                      <template v-if="article.tags && article.tags.length > 0">
+                        <el-tag 
+                          v-for="tag in article.tags" 
+                          :key="'tag-' + tag.id" 
+                          size="small"
+                          :style="tag.color ? { backgroundColor: tag.color, borderColor: tag.color, color: '#fff', marginRight: '5px' } : { marginRight: '5px' }"
+                          :type="tag.color ? undefined : 'info'"
+                        >
+                          {{ tag.name }}
+                        </el-tag>
+                      </template>
+                    </div>
                     <div style="color: #999; font-size: 12px;">
                       <span>作者：{{ article.author?.nickname || article.author?.username || '未知' }}</span>
                       <span style="margin-left: 20px;">发布时间：{{ formatDate(article.created_at) }}</span>
@@ -87,15 +119,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { getArticleList } from '@/api/article'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import type { Article, Pagination } from '@/api/types'
 
+const router = useRouter()
 const userStore = useUserStore()
 
 const articles = ref<Article[]>([])
 const loading = ref(false)
+const searchKeyword = ref('')
 const pagination = ref<Pagination>({
   page: 1,
   page_size: 10,
@@ -106,6 +142,14 @@ const pagination = ref<Pagination>({
 function handleLogout() {
   userStore.logout()
   ElMessage.success('已退出登录')
+}
+
+function handleSearchSubmit() {
+  if (searchKeyword.value.trim()) {
+    router.push({ path: '/search', query: { q: searchKeyword.value.trim() } })
+  } else {
+    router.push('/search')
+  }
 }
 
 function formatDate(dateStr: string) {
@@ -155,11 +199,28 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  height: 70px;
 }
 
 .el-header h1 {
   margin: 0;
   font-size: 24px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  padding: 0 40px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
 }
 
 .el-main {

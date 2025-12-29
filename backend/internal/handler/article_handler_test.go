@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"dbapp/internal/config"
 	"dbapp/internal/dto/request"
 	"dbapp/internal/middleware"
 	"dbapp/internal/repository"
@@ -13,9 +14,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	// 设置测试用的 JWT 配置
+	config.GlobalConfig = &config.Config{
+		JWT: config.JWTConfig{
+			Secret:    "test-secret-key-for-testing",
+			ExpiresIn: 3600,
+		},
+	}
+}
 
 func TestArticleHandler_GetArticleList(t *testing.T) {
 	db := test.SetupTestDB(t)
@@ -23,7 +33,9 @@ func TestArticleHandler_GetArticleList(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := service.NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 	articleHandler := NewArticleHandler(articleService)
 
 	// 创建测试数据
@@ -51,12 +63,14 @@ func TestArticleHandler_GetArticleDetail(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := service.NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 	articleHandler := NewArticleHandler(articleService)
 
 	// 创建测试数据
 	user := test.CreateTestUser(db, "testuser", "test@example.com")
-	article := test.CreateTestArticle(db, user.ID, "测试文章")
+	_ = test.CreateTestArticle(db, user.ID, "测试文章")
 
 	router := setupRouter()
 	router.GET("/api/v1/articles/:id", articleHandler.GetArticleDetail)
@@ -74,7 +88,9 @@ func TestArticleHandler_CreateArticle(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := service.NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 	articleHandler := NewArticleHandler(articleService)
 
 	// 创建测试用户
@@ -110,7 +126,9 @@ func TestArticleHandler_CreateArticle_Unauthorized(t *testing.T) {
 
 	articleRepo := repository.NewArticleRepository(db)
 	userRepo := repository.NewUserRepository(db)
-	articleService := service.NewArticleService(articleRepo, userRepo)
+	likeRepo := repository.NewLikeRepository(db)
+	articleImageRepo := repository.NewArticleImageRepository(db)
+	articleService := service.NewArticleService(articleRepo, userRepo, likeRepo, articleImageRepo)
 	articleHandler := NewArticleHandler(articleService)
 
 	router := setupRouter()

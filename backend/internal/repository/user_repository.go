@@ -2,6 +2,8 @@ package repository
 
 import (
 	"dbapp/internal/model"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -49,6 +51,6 @@ func (r *UserRepository) Update(user *model.User) error {
 
 func (r *UserRepository) UpdateLastLogin(userID uint64) error {
 	return r.db.Model(&model.User{}).Where("id = ?", userID).
-		Update("last_login_at", gorm.Expr("NOW()")).Error
+		Update("last_login_at", time.Now()).Error
 }
 

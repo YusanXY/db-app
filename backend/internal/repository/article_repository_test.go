@@ -11,7 +11,6 @@ func TestArticleRepository_Create(t *testing.T) {
 	defer test.TeardownTestDB(db)
 
 	repo := NewArticleRepository(db)
-	userRepo := NewUserRepository(db)
 
 	// 创建测试用户
 	user := test.CreateTestUser(db, "testuser", "test@example.com")

@@ -2,8 +2,11 @@ package test
 
 import (
 	"dbapp/internal/model"
+	"dbapp/pkg/logger"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -67,9 +70,11 @@ func CreateTestUser(db *gorm.DB, username, email string) *model.User {
 
 // CreateTestArticle 创建测试文章
 func CreateTestArticle(db *gorm.DB, authorID uint64, title string) *model.Article {
+	// 生成唯一的 slug
+	uniqueSlug := fmt.Sprintf("test-article-%d-%d", time.Now().UnixNano(), authorID)
 	article := &model.Article{
 		Title:    title,
-		Slug:     "test-article",
+		Slug:     uniqueSlug,
 		Content:  "测试内容",
 		Summary:  "测试摘要",
 		AuthorID: authorID,
